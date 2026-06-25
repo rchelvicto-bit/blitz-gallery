@@ -10,6 +10,7 @@
     .hero{text-align:center;background:white;border-radius:30px;padding:28px 18px;margin-bottom:22px;box-shadow:0 16px 40px rgba(242,91,147,.16)}
     .logo{font-size:48px;font-weight:900;color:#f25b93}
     .sub{font-weight:800;margin-top:8px}
+    .hint{font-size:14px;font-weight:700;color:#c67491;margin-top:8px}
     .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px}
     .card{background:white;border-radius:26px;padding:16px;box-shadow:0 12px 32px rgba(242,91,147,.14)}
     .card h2{text-align:center;margin:4px 0 14px;color:#b94c6b}
@@ -23,6 +24,7 @@
     <div class="hero">
       <div class="logo">BLITZ</div>
       <div class="sub">Your soft files are ready ✨</div>
+      <div class="hint">Download your files one by one below.</div>
     </div>
 
     <div id="content" class="loading">Loading gallery...</div>
@@ -33,17 +35,21 @@ const SUPABASE_URL = "https://goagctycysswfhzedbwf.supabase.co";
 const BUCKET = "blitz-galleries";
 
 const params = new URLSearchParams(window.location.search);
-const galleryId = params.get("id") || params.get("galleryId");
+const galleryId = params.get("galleryId") || params.get("id");
 
 const content = document.getElementById("content");
 
 function fileUrl(path) {
-  return `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/galleries/${galleryId}/${path}`;
+  return `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/galleries/${encodeURIComponent(galleryId)}/${path}`;
 }
 
 async function exists(path) {
   try {
-    const res = await fetch(fileUrl(path), { method: "HEAD" });
+    const res = await fetch(fileUrl(path), {
+      method: "HEAD",
+      cache: "no-store"
+    });
+
     return res.ok;
   } catch {
     return false;
@@ -52,6 +58,7 @@ async function exists(path) {
 
 function imageCard(title, path) {
   const url = fileUrl(path);
+
   return `
     <section class="card">
       <h2>${title}</h2>
@@ -62,10 +69,11 @@ function imageCard(title, path) {
 
 function videoCard(title, path) {
   const url = fileUrl(path);
+
   return `
     <section class="card">
       <h2>${title}</h2>
-      <video controls playsinline preload="metadata">
+      <video controls playsinline loop preload="metadata">
         <source src="${url}" type="video/mp4">
       </video>
       <a class="btn" href="${url}" download>Download</a>
@@ -81,33 +89,41 @@ async function loadGallery() {
 
   let html = "";
 
-  if (await exists("Photostrip.png"))
+  if (await exists("Photostrip.png")) {
     html += imageCard("Photostrip", "Photostrip.png");
+  }
 
-  if (await exists("LivePhoto.mp4"))
+  if (await exists("LivePhoto.mp4")) {
     html += videoCard("Live Photo", "LivePhoto.mp4");
+  }
 
-  for (let i = 1; i <= 20; i++) {
+  for (let i = 1; i <= 50; i++) {
     const path = `Animation_${i}.mp4`;
-    if (await exists(path))
+
+    if (await exists(path)) {
       html += videoCard(`Animation ${i}`, path);
+    }
   }
 
-  for (let i = 1; i <= 20; i++) {
+  for (let i = 1; i <= 50; i++) {
     const path = `Boomerang_${i}.mp4`;
-    if (await exists(path))
+
+    if (await exists(path)) {
       html += videoCard(`Boomerang ${i}`, path);
+    }
   }
 
-  for (let i = 1; i <= 20; i++) {
+  for (let i = 1; i <= 50; i++) {
     const path = `SinglePhotos/SinglePhoto_${i}.jpg`;
-    if (await exists(path))
+
+    if (await exists(path)) {
       html += imageCard(`Single Photo ${i}`, path);
+    }
   }
 
   if (!html) {
     content.className = "empty";
-    content.innerHTML = "File gallery belum tersedia.";
+    content.innerHTML = "File gallery belum tersedia atau upload belum selesai.";
     return;
   }
 
